@@ -17,7 +17,6 @@ class Settings(BaseSettings):
 
     app_env: Literal["development", "production", "test"] = "development"
     log_level: str = "INFO"
-    osv_api_base: str = "https://api.osv.dev"
     scan_timeout: int = 120
 
     @property

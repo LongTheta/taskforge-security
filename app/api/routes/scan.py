@@ -28,7 +28,6 @@ def post_scan(request: Request, body: ScanRequest) -> ScanResponse:
         return run_scan(
             target_path=body.target_path,
             manifest_path=body.manifest_path,
-            include_osv_enrichment=body.include_osv_enrichment,
         )
     except FileNotFoundError as e:
         logger.warning("Scan failed: file not found", extra={**extra, "error": str(e)})

@@ -10,7 +10,9 @@ from pythonjsonlogger import json
 class TaskForgeJsonFormatter(json.JsonFormatter):
     """Custom JSON formatter with request context support."""
 
-    def add_fields(self, log_record: dict[str, Any], record: logging.LogRecord, message_dict: dict[str, Any]) -> None:
+    def add_fields(
+        self, log_record: dict[str, Any], record: logging.LogRecord, message_dict: dict[str, Any]
+    ) -> None:
         super().add_fields(log_record, record, message_dict)
         log_record["level"] = record.levelname
         log_record["logger"] = record.name
@@ -39,9 +41,6 @@ def setup_logging(log_level: str = "INFO") -> None:
     root.handlers.clear()
     root.addHandler(handler)
     root.setLevel(getattr(logging, log_level.upper(), logging.INFO))
-    # Reduce noise from third-party libs
-    logging.getLogger("httpx").setLevel(logging.WARNING)
-    logging.getLogger("httpcore").setLevel(logging.WARNING)
 
 
 def get_logger(name: str) -> logging.Logger:

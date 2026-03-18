@@ -10,19 +10,16 @@ from app.schemas.scan import VulnerabilityItem
 def run_pip_audit(manifest_path: Path, timeout: int) -> list[VulnerabilityItem]:
     """
     Run pip-audit against a requirements file and parse JSON output.
-    Returns normalized vulnerability list. No shell=True - safe from injection.
+    Uses subprocess.run (NOT shell=True). Handles returncode 0 or 1 (both valid).
     """
-    # Use python -m for portability; list of args - no shell, no injection risk
     cmd = [
         "python",
         "-m",
         "pip_audit",
         "-r",
         str(manifest_path),
-        "-f",
+        "--format",
         "json",
-        "--desc",
-        "on",
     ]
     result = subprocess.run(
         cmd,
@@ -67,10 +64,8 @@ def _parse_pip_audit_json(stdout: str) -> list[VulnerabilityItem]:
                     package=name,
                     current_version=version,
                     vulnerability_id=vuln_id,
-                    severity="unknown",
                     summary=summary,
                     fixed_versions=fix_versions,
-                    source="pip-audit",
                 )
             )
     return items

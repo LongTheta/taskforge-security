@@ -9,7 +9,6 @@ services:
     environment:
       - APP_ENV=development
       - LOG_LEVEL=INFO
-      - OSV_API_BASE=https://api.osv.dev
       - SCAN_TIMEOUT=120
     volumes:
       # Mount a sample project for scanning (optional)
