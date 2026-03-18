@@ -19,6 +19,13 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     scan_timeout: int = 120
 
+    # Rate limiting (requests per minute)
+    rate_limit_scan: str = "10/minute"
+
+    # API auth: require X-API-Key header for sensitive endpoints when true
+    require_api_key: bool = False
+    api_key: str = ""
+
     @property
     def is_production(self) -> bool:
         return self.app_env == "production"

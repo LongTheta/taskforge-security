@@ -67,3 +67,15 @@ def test_scan_returns_400_on_validation_error(client: TestClient) -> None:
             json={"target_path": ".", "manifest_path": "../../../etc/passwd"},
         )
     assert resp.status_code == 400
+
+
+def test_scan_returns_401_when_auth_required_and_missing(client: TestClient) -> None:
+    """Scan returns 401 when API key is required but not provided."""
+    mock_settings = type("Settings", (), {"require_api_key": True, "api_key": "secret"})()
+    with patch("app.core.auth.get_settings", return_value=mock_settings):
+        resp = client.post(
+            "/api/v1/scan",
+            json={"target_path": ".", "manifest_path": "requirements.txt"},
+        )
+    assert resp.status_code == 401
+    assert "api key" in resp.json()["detail"].lower() or "invalid" in resp.json()["detail"].lower()

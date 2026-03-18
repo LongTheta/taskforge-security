@@ -10,6 +10,7 @@ services:
       - APP_ENV=development
       - LOG_LEVEL=INFO
       - SCAN_TIMEOUT=120
+      - REQUIRE_API_KEY=false
     volumes:
       # Mount a sample project for scanning (optional)
       - .:/app

@@ -1,8 +1,10 @@
 """Scan endpoint."""
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 
+from app.core.auth import verify_api_key
 from app.core.logging_config import get_logger
+from app.core.rate_limit import limiter
 from app.schemas.scan import ScanRequest, ScanResponse
 from app.services.scan_service import run_scan
 
@@ -11,7 +13,12 @@ logger = get_logger(__name__)
 
 
 @router.post("", response_model=ScanResponse)
-def post_scan(request: Request, body: ScanRequest) -> ScanResponse:
+@limiter.limit("10/minute")
+def post_scan(
+    request: Request,
+    body: ScanRequest,
+    _: None = Depends(verify_api_key),
+) -> ScanResponse:
     """
     POST /api/v1/scan
     Run vulnerability scan against target path and manifest.
