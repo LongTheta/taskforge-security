@@ -67,7 +67,7 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
       - run: pip install -e ".[dev]"
       - run: pip-audit -f cyclonedx-json -o sbom.json || true
-      - uses: actions/upload-artifact@26a5d127d7bc4e2c107381666845c7554e21d0e0  # v4.5.0
+      - uses: actions/upload-artifact@v4
         with:
           name: sbom
           path: sbom.json
