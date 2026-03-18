@@ -1,0 +1,22 @@
+---
+description: Python and FastAPI conventions for app code
+globs: app/**/*.py
+alwaysApply: false
+---
+
+# Python & FastAPI Conventions
+
+## Path Validation
+- Validate `target_path` and `manifest_path` before file access
+- Resolve paths within target; reject traversal (`../`)
+- Use `Path` and `resolve()` for safe path handling
+
+## FastAPI Routes
+- Use `Depends(verify_api_key)` for protected endpoints
+- Apply `@limiter.limit()` for rate limiting
+- Include `request_id` in log extra for traceability
+
+## Remediation
+- Never fabricate fixed versions; use advisory data only
+- Mark major upgrades and security-sensitive libs for manual review
+- Prefer patch → minor → major upgrade order

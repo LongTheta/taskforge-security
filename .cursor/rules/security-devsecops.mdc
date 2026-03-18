@@ -1,0 +1,24 @@
+---
+description: Security and DevSecOps conventions for taskforge-security
+alwaysApply: true
+---
+
+# Security & DevSecOps Conventions
+
+## Subprocess Safety
+- Never use `shell=True`; use list args for subprocess
+- Validate and sanitize all user-controlled paths before subprocess calls
+
+## Secrets
+- No hardcoded secrets; use env vars via pydantic-settings
+- Document platform secret management (External Secrets, Vault) for production
+
+## API Security
+- Enable `REQUIRE_API_KEY=true` in production
+- Apply rate limiting to scan/remediate endpoints (SlowAPI)
+- Validate `target_path` and `manifest_path`; prevent path traversal
+
+## Error Handling
+- Do not expose stack traces to clients
+- Log errors with request_id for traceability
+- Use structured JSON logging

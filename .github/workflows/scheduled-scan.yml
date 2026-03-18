@@ -24,7 +24,7 @@ jobs:
         run: uv run pip-audit --skip-editable
         continue-on-error: true
       - name: pip-audit JSON (artifact)
-        run: uv run pip-audit -f cyclonedx-json -o scan-result.json || true
+        run: uv run pip-audit -f cyclonedx-json -o scan-result.json
       - uses: actions/upload-artifact@v4
         with:
           name: scan-result

@@ -1,0 +1,20 @@
+---
+description: CI/CD and pipeline conventions
+globs: .github/workflows/*.yml
+alwaysApply: false
+---
+
+# Pipeline Conventions
+
+## SBOM & Security
+- SBOM steps must NOT use `|| true` — failures should be visible
+- Run pip-audit and bandit in CI
+- Use uv.lock for reproducible installs
+
+## GitHub Actions
+- Pin actions to SHA or v4 (e.g. `actions/checkout@v4`)
+- Support both `main` and `master` branches where applicable
+
+## Scheduled Workflows
+- Use `workflow_dispatch` for manual runs
+- Document cron schedule in comments

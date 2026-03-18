@@ -1,6 +1,33 @@
 # Skill Assessments — taskforge-security
 
-*Generated from running all applicable Cursor skills against this repository.*
+*Generated from running all applicable Cursor skills (22 total) against this repository.*
+
+**Project rules:** `.cursor/rules/` — security-devsecops.mdc (always apply), pipeline-conventions.mdc, python-fastapi.mdc
+
+## All 22 Skills — Applicability & Verdict
+
+| # | Skill | Applicable | Verdict |
+|---|-------|------------|---------|
+| 1 | cve-detect-and-remediate | Yes | Clean |
+| 2 | zero-trust-gitops-enforcement | Yes | PASS |
+| 3 | dod-zero-trust-architect | Yes | 6.5/10 |
+| 4 | security-evaluator | Yes | Low risk |
+| 5 | ai-agent-architecture | Yes | N/A (no agents) |
+| 6 | ai-devsecops-policy-enforcement | Yes | pass |
+| 7 | tool-evaluator | Yes | Fit |
+| 8 | observability-bootstrap | Yes | See §8 |
+| 9 | dependency-governance | Yes | See §9 |
+| 10 | release-pipeline-designer | Yes | See §10 |
+| 11 | ai-code-review-guardrails | Yes | See §11 |
+| 12 | repo-docs-writer | Yes | See §12 |
+| 13 | test-strategy-designer | Yes | See §13 |
+| 14 | create-repo-foundation | Yes | See §14 |
+| 15 | create-rule | Meta | Used for .cursor/rules |
+| 16 | create-skill | Meta | N/A |
+| 17 | create-subagent | Meta | N/A |
+| 18 | update-cursor-settings | Meta | N/A |
+| 19 | shell | Meta | N/A |
+| 20 | migrate-to-skills | Meta | N/A |
 
 ---
 
@@ -49,8 +76,7 @@
 
 | # | Area | Violation | Severity |
 |---|------|-----------|----------|
-| 1 | Supply Chain | SBOM uses `|| true` (may mask failures) | Low |
-| 2 | Supply Chain | Trivy image scan job disabled by default | Low |
+| 1 | Supply Chain | Trivy image scan job disabled by default in scheduled workflow | Low |
 
 ## Required Fixes
 
@@ -58,15 +84,17 @@
 
 ## Completed Fixes (since last assessment)
 
-- [x] SBOM generation in CI (`pip-audit -f cyclonedx-json`)
+- [x] SBOM generation in CI; CI SBOM fails on vulns (no `|| true`)
 - [x] Lockfile (`uv.lock`) for reproducible builds
 - [x] Metrics endpoint (`/metrics`)
 - [x] CI branches: `main` and `master` both supported
 - [x] Pinned actions (checkout, setup-python, upload-artifact)
+- [x] Production startup warning when API key not required
+- [x] TLS and production deployment documented in README
 
 ## Recommended Improvements
 
-- Remove `|| true` from SBOM step so failures are visible
+- (Done) Removed `|| true` from scheduled-scan.yml SBOM step
 - Enable Trivy image scan in scheduled workflow when base image is defined
 - Add manual approval gate for production in platform deployment (not in this repo)
 
@@ -214,7 +242,7 @@ TaskForge Security is a FastAPI service with pip-audit, Trivy image scanning, OS
 
 - API auth is opt-in (default off)
 - No distributed tracing
-- SBOM step uses `|| true` (masks failures)
+- (Resolved) SBOM steps no longer mask failures
 
 ## 6. Compliance / Control Considerations
 
@@ -223,8 +251,8 @@ TaskForge Security is a FastAPI service with pip-audit, Trivy image scanning, OS
 
 ## 7. Required Mitigations
 
-1. Enable `REQUIRE_API_KEY` in production (Low effort)
-2. Remove `|| true` from SBOM step so failures are visible (Low effort)
+1. Enable `REQUIRE_API_KEY` in production (Low effort) — startup warning added
+2. (Done) Removed `|| true` from scheduled-scan.yml
 
 ## 8. Operational Security Considerations
 
@@ -278,7 +306,7 @@ TaskForge Security is a FastAPI service with pip-audit, Trivy image scanning, OS
 | Rate limiting | Pass | SlowAPI on scan/remediate |
 | Metrics | Pass | /metrics endpoint |
 
-**Verdict:** **pass** — No critical/high findings. SBOM present. Optional: remove `|| true` from SBOM step.
+**Verdict:** **pass** — No critical/high findings. SBOM present; no failure masking.
 
 ---
 
@@ -316,12 +344,124 @@ TaskForge Security is a Python FastAPI service with pip-audit, Trivy image scann
 
 ---
 
+# 8. Observability Bootstrap
+
+**Assessment:** Repo has observability in place.
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| Metrics | ✅ | Prometheus `/metrics`; taskforge_security_* counters |
+| Logging | ✅ | Structured JSON; request IDs |
+| Tracing | ⚠️ | No OpenTelemetry; correlation IDs only |
+| Dashboards | ✅ | docs/grafana/taskforge-security-dashboard.json |
+| Alerts | ⚠️ | No alert rules in repo; platform responsibility |
+
+**Verdict:** Adequate for internal service. Add trace propagation if platform supports OpenTelemetry.
+
+---
+
+# 9. Dependency Governance
+
+**Assessment:** Governance aligned with best practice.
+
+| Policy | Status | Notes |
+|--------|--------|-------|
+| Pinning | ✅ | uv.lock; `uv sync --locked` in Docker |
+| License | ⚠️ | No explicit license policy; MIT deps typical |
+| Update cadence | ✅ | CI pip-audit; scheduled scan daily |
+| Blocklist | N/A | No blocklist config; pip-audit flags vulns |
+
+**Verdict:** Lockfile and CI enforce pinning. Consider adding license policy doc if compliance required.
+
+---
+
+# 10. Release Pipeline Designer
+
+**Assessment:** CI has expected stages.
+
+| Stage | Status | Notes |
+|-------|--------|-------|
+| Build | ✅ | uv/pip install |
+| Lint | ✅ | ruff check, format |
+| Test | ✅ | pytest |
+| Security | ✅ | bandit, pip-audit |
+| SBOM | ✅ | CycloneDX JSON |
+| Deploy | N/A | Platform (taskforge-platform) |
+
+**Verdict:** Pipeline complete for this repo. Promotion flow handled by platform.
+
+---
+
+# 11. AI Code Review Guardrails
+
+**Assessment:** Implicit guardrails from .cursor/rules.
+
+| Area | Status | Notes |
+|------|--------|-------|
+| Security checks | ✅ | security-devsecops.mdc |
+| Pipeline checks | ✅ | pipeline-conventions.mdc |
+| Python patterns | ✅ | python-fastapi.mdc |
+| Severity model | ⚠️ | Not explicit; use Critical/High/Medium/Low |
+| Boundaries | ✅ | Human approves; no auto-merge |
+
+**Verdict:** Rules provide review guidance. Consider adding explicit severity definitions to CONTRIBUTING.
+
+---
+
+# 12. Repo Docs Writer
+
+**Assessment:** Documentation present and current.
+
+| Doc | Status | Notes |
+|-----|--------|-------|
+| README | ✅ | Features, API, config, deployment |
+| CONTRIBUTING | ⚠️ | Not present; README has Development section |
+| API docs | ✅ | README has curl examples |
+| Architecture | ⚠️ | Project structure only |
+| Runbooks | ⚠️ | Not present |
+
+**Verdict:** README is strong. Add CONTRIBUTING.md and architecture overview if onboarding external contributors.
+
+---
+
+# 13. Test Strategy Designer
+
+**Assessment:** Test pyramid present.
+
+| Tier | Status | Notes |
+|------|--------|-------|
+| Unit | ✅ | test_scan, test_remediation, test_kev, test_osv, test_gate |
+| Integration | ⚠️ | Mocked; no live pip-audit/OSV/KEV |
+| E2E | ⚠️ | Not present |
+| Coverage | ⚠️ | No coverage target in CI |
+
+**Verdict:** Unit tests with mocks. Consider integration tests with real pip-audit; add coverage target.
+
+---
+
+# 14. Create Repo Foundation
+
+**Assessment:** Foundation complete.
+
+| Artifact | Status | Notes |
+|----------|--------|-------|
+| .gitignore | ✅ | Present |
+| README | ✅ | Comprehensive |
+| LICENSE | ⚠️ | Not in repo root (pyproject has license field) |
+| CONTRIBUTING | ⚠️ | Not present |
+| Directory layout | ✅ | app/, tests/, docs/, .github/ |
+| Config | ✅ | pyproject.toml, uv.lock |
+
+**Verdict:** Structure solid. Add LICENSE file and CONTRIBUTING.md for full foundation.
+
+---
+
 # Summary of Action Items
 
 | Priority | Action | Status |
 |----------|--------|--------|
-| 1 | Enable `REQUIRE_API_KEY` in production | ✅ Startup warning when production without API key; README updated |
-| 2 | Remove `|| true` from SBOM step | ✅ CI SBOM job now fails on vulnerabilities |
+| 1 | Enable `REQUIRE_API_KEY` in production | ✅ Startup warning; README updated |
+| 2 | Remove `|| true` from SBOM steps | ✅ CI and scheduled-scan both fail on vulns |
 | 3 | Document TLS requirement at ingress | ✅ Production Deployment section in README |
 | 4 | Add trace correlation (if platform supports) | Pending |
 | 5 | Add Grafana dashboard to platform observability | Pending |
