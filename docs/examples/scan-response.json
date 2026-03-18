@@ -1,0 +1,28 @@
+{
+  "vulnerability_count": 2,
+  "vulnerabilities": [
+    {
+      "package": "requests",
+      "current_version": "2.25.0",
+      "vulnerability_id": "CVE-2023-32681",
+      "summary": "Request smuggling vulnerability",
+      "fixed_versions": ["2.31.0"],
+      "source": "pip-audit",
+      "severity": null,
+      "kev_listed": false,
+      "priority": "high",
+      "priority_rationale": "high severity; fix available",
+      "aliases": [],
+      "osv_enriched": true
+    }
+  ],
+  "risk_summary": {
+    "critical_count": 0,
+    "high_count": 1,
+    "medium_count": 1,
+    "low_count": 0,
+    "kev_count": 0
+  },
+  "osv_enrichment_available": true,
+  "kev_prioritization_available": true
+}

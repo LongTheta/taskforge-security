@@ -1,0 +1,21 @@
+{
+  "recommendations": [
+    {
+      "package": "requests",
+      "current_version": "2.25.0",
+      "recommended_version": "2.31.0",
+      "vulnerability_ids": ["CVE-2023-32681"],
+      "severity": null,
+      "kev_listed": false,
+      "rationale": "Upgrade to 2.31.0 (lowest version fixing all 1 vuln(s))",
+      "confidence": "high",
+      "upgrade_type": "minor",
+      "manual_review_required": false,
+      "fixed_versions": ["2.31.0"],
+      "mitigation_guidance": null
+    }
+  ],
+  "recommendation_count": 1,
+  "manual_review_count": 0,
+  "no_fix_count": 0
+}

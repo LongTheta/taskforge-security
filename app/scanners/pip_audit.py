@@ -66,6 +66,7 @@ def _parse_pip_audit_json(stdout: str) -> list[VulnerabilityItem]:
                     vulnerability_id=vuln_id,
                     summary=summary,
                     fixed_versions=fix_versions,
+                    source="pip-audit",
                 )
             )
     return items

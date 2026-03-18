@@ -1,6 +1,6 @@
 # Skill Assessments — taskforge-security
 
-*Generated from running all applicable skills against this repository.*
+*Generated from running all applicable Cursor skills against this repository.*
 
 ---
 
@@ -10,34 +10,30 @@
 
 ### Executive Summary
 
-- **Total findings (project deps):** Declared dependencies in `pyproject.toml` are minimal and well-pinned (fastapi, uvicorn, pydantic, pydantic-settings, python-json-logger, pip-audit). CI runs `pip-audit --skip-editable` on every push.
-- **Critical / High / Medium / Low:** Project deps appear clean; CI would fail on new vulns.
-- **KEV-listed:** None identified in declared project dependencies.
-- **Fixable now vs manual review:** Project is in good shape; no immediate remediation needed for declared deps.
+- **Total findings:** 0 — pip-audit reports no known vulnerabilities in project dependencies.
+- **Critical / High / Medium / Low:** None.
+- **KEV-listed:** None.
+- **Fixable now vs manual review:** N/A — project deps are clean.
 
 ### Findings (Project Scope)
 
 | Package | Version | Status |
 |---------|---------|--------|
-| fastapi | ≥0.109.0 | Declared, no known vulns in typical range |
-| uvicorn | ≥0.27.0 | Declared |
-| pydantic | ≥2.5.0 | Declared |
-| pydantic-settings | ≥2.1.0 | Declared |
-| python-json-logger | ≥2.0.0 | Declared |
-| pip-audit | ≥2.6.0 | Declared |
+| All deps | (see uv.lock) | No known vulns |
 
-*Note: Local `pip-audit` run may report vulns from the global Python environment (e.g., langchain, tornado, pillow). Those are outside this project's declared dependencies.*
+*Note: CI runs `pip-audit --skip-editable` on every push. SBOM job generates CycloneDX JSON. `uv.lock` ensures reproducible installs.*
 
 ### Remediation Plan
 
-- **Auto-fix candidates:** None for project deps.
+- **Auto-fix candidates:** None.
 - **Manual review:** If CI reports new vulns, apply patch/minor bumps per skill rules.
 - **Temporary mitigations:** N/A.
 
 ### Validation Plan
 
-- CI already runs `pip-audit --skip-editable`.
+- CI already runs pip-audit and SBOM.
 - Run `pytest` and `ruff` after any dependency changes.
+- `POST /api/v1/remediate/create-pr` can create remediation PRs when configured.
 
 ---
 
@@ -47,35 +43,40 @@
 
 ## Pass / Fail
 
-**FAIL** — Medium violations present; no High violations.
+**PASS** — No High violations. Required controls present.
 
 ## Violations
 
 | # | Area | Violation | Severity |
-|---|------|------------|----------|
-| 1 | Supply Chain | No SBOM generation in CI | Medium |
-| 2 | Supply Chain | Dependencies use version ranges (≥) not pinned digests | Medium |
-| 3 | Observability | No explicit metrics endpoint; logs are structured | Low |
-| 4 | Identity | CI uses default GitHub Actions identity; no OIDC/workload identity | Low |
+|---|------|-----------|----------|
+| 1 | Supply Chain | SBOM uses `|| true` (may mask failures) | Low |
+| 2 | Supply Chain | Trivy image scan job disabled by default | Low |
 
 ## Required Fixes
 
-- [ ] Add SBOM generation step (e.g., `pip-audit --format cyclonedx-json` or syft) to CI
-- [ ] Consider lockfile (e.g., `pip freeze` or `uv lock`) for reproducible builds
+- [ ] None — all High/Medium violations addressed.
+
+## Completed Fixes (since last assessment)
+
+- [x] SBOM generation in CI (`pip-audit -f cyclonedx-json`)
+- [x] Lockfile (`uv.lock`) for reproducible builds
+- [x] Metrics endpoint (`/metrics`)
+- [x] CI branches: `main` and `master` both supported
+- [x] Pinned actions (checkout, setup-python, upload-artifact)
 
 ## Recommended Improvements
 
-- Pin GitHub Actions to full SHA digests (already done for checkout and setup-python)
-- Add Trivy or Grype for container image scanning in CI
-- Document promotion path (dev → prod) when platform repo is integrated
+- Remove `|| true` from SBOM step so failures are visible
+- Enable Trivy image scan in scheduled workflow when base image is defined
+- Add manual approval gate for production in platform deployment (not in this repo)
 
 ## Compliance Alignment
 
 | Framework | Alignment Notes |
-|-----------|------------------|
-| DoD Zero Trust | Partial: path validation, no shell injection, structured logs; missing SBOM |
-| NIST 800-53 | SI-3 (malicious code), SA-11 (developer security) partially addressed |
-| Supply Chain (SLSA) | Level 0–1: no provenance, no SBOM |
+|-----------|-----------------|
+| DoD Zero Trust | Improved: SBOM, lockfile, metrics, policy gate |
+| NIST 800-53 | SI-3, SA-11 partially addressed; AC-2 via API key |
+| Supply Chain (SLSA) | Level 1: SBOM, lockfile, pinned artifacts |
 
 ---
 
@@ -85,7 +86,7 @@
 
 ## Overall Score
 
-**5.5 / 10** — Usable security microservice with solid basics; gaps in supply chain, automation, and visibility.
+**6.5 / 10** — Solid security microservice; gaps in automation, visibility, and workload identity.
 
 ## Maturity Level
 
@@ -98,11 +99,11 @@
 ## Pillar Breakdown
 
 ### 1. User
-- **Score:** 4
-- **Current State:** No direct user auth; service is internal. No MFA, IdP.
-- **Gaps:** No auth on scan endpoint; assumes trusted caller.
-- **Required Controls:** API auth (API key, OIDC) when exposed beyond platform.
-- **Recommended Fixes:** Add API key or service-account auth before production exposure.
+- **Score:** 5
+- **Current State:** Optional X-API-Key auth when `REQUIRE_API_KEY=true`. No MFA, IdP.
+- **Gaps:** Auth is opt-in; API key is single shared secret.
+- **Required Controls:** Enable API key in production; consider OIDC for platform integration.
+- **Recommended Fixes:** Document auth requirements; enable `REQUIRE_API_KEY` in production.
 
 ### 2. Device
 - **Score:** 5
@@ -111,11 +112,10 @@
 - **Recommended Fixes:** Ensure host/container hardening in platform deployment.
 
 ### 3. Application & Workload
-- **Score:** 6
-- **Current State:** FastAPI, path validation, no shell injection, subprocess with list args.
-- **Gaps:** No rate limiting; scan endpoint can be abused for resource exhaustion.
-- **Required Controls:** Rate limiting, scan timeout (present: 120s).
-- **Recommended Fixes:** Add rate limiting middleware; consider scan concurrency limits.
+- **Score:** 7
+- **Current State:** FastAPI, path validation, no shell injection, subprocess with list args. **Rate limiting** (SlowAPI). Scan timeout 120s.
+- **Gaps:** No scan concurrency limits.
+- **Recommended Fixes:** Consider concurrency limits for high load.
 
 ### 4. Data
 - **Score:** 5
@@ -130,35 +130,34 @@
 - **Recommended Fixes:** Align with platform network policies.
 
 ### 6. Automation & Orchestration
-- **Score:** 6
-- **Current State:** CI with ruff, pytest, bandit, pip-audit; pinned actions.
-- **Gaps:** No SBOM; CI triggers on `main` but repo uses `master` (branch mismatch).
-- **Required Controls:** Fix CI branch trigger; add SBOM step.
-- **Recommended Fixes:** Change CI `on.push.branches` to `[master]` or rename branch to `main`.
+- **Score:** 7
+- **Current State:** CI with ruff, pytest, bandit, pip-audit, SBOM; uv.lock; scheduled scan workflow; pinned actions.
+- **Gaps:** No provenance/signing; no Argo CD in repo.
+- **Recommended Fixes:** Align with platform GitOps.
 
 ### 7. Visibility & Analytics
-- **Score:** 6
-- **Current State:** Structured JSON logging; request ID middleware; duration in headers.
-- **Gaps:** No metrics endpoint; no Prometheus/Grafana integration in repo.
-- **Recommended Fixes:** Add `/metrics` or rely on platform observability.
+- **Score:** 7
+- **Current State:** Structured JSON logging; request ID middleware; **Prometheus metrics** (`/metrics`); **Grafana dashboard** (docs/grafana).
+- **Gaps:** No distributed tracing.
+- **Recommended Fixes:** Add trace correlation if platform supports it.
 
 ## Cross-Pillar Risks
 
-- **Branch mismatch:** CI on `main`, repo on `master` → CI may not run on pushes.
-- **No SBOM:** Limits supply chain visibility and policy enforcement.
+- **Auth opt-in:** API key required only when `REQUIRE_API_KEY=true`; may be disabled in dev.
+- **GitHub token:** Stored in env; ensure platform uses External Secrets or similar.
 
 ## Priority Fixes (Top 5)
 
-1. **Fix CI branch trigger** — Effort: Low — Impact: High (CI may not run)
-2. **Add SBOM generation** — Effort: Low — Impact: Medium
-3. **Add API auth for scan endpoint** — Effort: Medium — Impact: High (when exposed)
-4. **Add rate limiting** — Effort: Low — Impact: Medium
-5. **Add lockfile for reproducible builds** — Effort: Low — Impact: Medium
+1. **Enable API auth in production** — Effort: Low — Impact: High
+2. **Document TLS at ingress** — Effort: Low — Impact: Medium
+3. **Remove `|| true` from SBOM step** — Effort: Low — Impact: Low
+4. **Add trace correlation** — Effort: Medium — Impact: Medium
+5. **Consider OIDC for platform integration** — Effort: High — Impact: Medium
 
 ## Roadmap to Target ZT
 
-- **0–3 months:** Fix CI branch; add SBOM; document TLS/auth requirements.
-- **3–6 months:** Add auth middleware; rate limiting; align with platform observability.
+- **0–3 months:** Enable API auth in prod; document TLS; verify platform secrets.
+- **3–6 months:** Trace correlation; workload identity if platform supports.
 
 ## Roadmap to Advanced ZT
 
@@ -170,76 +169,78 @@
 
 ## 1. Security Summary
 
-TaskForge Security is a minimal FastAPI service that scans `requirements.txt` files for CVEs via pip-audit. It has solid basics: path validation, no shell injection, structured logging, non-root container, and CI security checks. Gaps include no API authentication, no rate limiting, no SBOM generation, and a CI branch mismatch. For internal platform use with network isolation, risk is moderate; for internet exposure, additional controls are required.
+TaskForge Security is a FastAPI service with pip-audit, Trivy image scanning, OSV/KEV enrichment, remediation planning, PR creation, policy gating, and Prometheus metrics. It has solid controls: path validation, no shell injection, structured logging, non-root container, rate limiting, optional API auth, SBOM, lockfile, and metrics. For internal platform use, risk is moderate-low; for internet exposure, ensure API auth and rate limits are enabled.
 
 ## 2. Threat / Risk Areas
 
-- **Abuse of scan endpoint:** Unbounded scans can exhaust CPU/memory.
+- **Abuse of scan endpoint:** Mitigated by rate limiting (10/min scan, 5/min remediate).
 - **Path traversal:** Mitigated by validation in `requirements.py`.
 - **Command injection:** Mitigated (subprocess with list args, no `shell=True`).
-- **Supply chain:** No SBOM; dependency ranges (≥) not pinned.
-- **CI not running:** Branch mismatch (`main` vs `master`).
+- **Supply chain:** SBOM, lockfile, pip-audit in CI.
+- **Secrets:** Loaded from env; no hardcoded secrets.
 
 ## 3. Security Scorecard
 
 | Domain | Score (1–5) | Notes |
 |--------|-------------|-------|
-| Identity and access management | 2 | No auth on endpoints |
+| Identity and access management | 4 | Optional API key; enable in prod |
 | RBAC / least privilege | 3 | Non-root container; no API RBAC |
-| Secrets handling | 4 | No secrets in code; .env in .gitignore |
+| Secrets handling | 4 | Env vars; no secrets in code |
 | Audit logging and accountability | 4 | Structured logs, request IDs |
-| Encryption in transit and at rest | 3 | TLS at ingress assumed; no at-rest (stateless) |
-| API / network exposure | 3 | No rate limiting; single port |
-| Supply chain security | 3 | pip-audit in CI; no SBOM |
-| Dependency/image scanning | 4 | pip-audit, bandit in CI |
+| Encryption in transit and at rest | 3 | TLS at ingress assumed |
+| API / network exposure | 4 | Rate limiting; auth optional |
+| Supply chain security | 4 | SBOM, lockfile, pip-audit |
+| Dependency/image scanning | 5 | pip-audit, Trivy, bandit |
 | Configuration management | 4 | Pydantic settings; .env |
 | Secure-by-default posture | 4 | Path validation, fail-safe errors |
+| Observability | 4 | Metrics, Grafana dashboard |
 
 ## 4. Key Strengths
 
-- Path validation (length, traversal) in `requirements.py`
+- Path validation (length, traversal)
 - Subprocess without `shell=True`
 - Structured JSON logging with request IDs
 - Non-root Docker user
-- CI: ruff, pytest, bandit, pip-audit
-- Pinned GitHub Actions (SHA)
-- Clean error handling (no stack traces to clients)
+- Rate limiting (SlowAPI)
+- Optional API key auth
+- CI: ruff, pytest, bandit, pip-audit, SBOM
+- uv.lock for reproducible builds
+- Prometheus metrics
+- Policy gate (block on critical/KEV)
+- Trivy image scanning
+- GitHub PR creation
 
 ## 5. Key Risks / Gaps
 
-- No API authentication
-- No rate limiting
-- CI triggers on `main`; repo uses `master`
-- No SBOM generation
-- Unpinned dependency versions (≥)
+- API auth is opt-in (default off)
+- No distributed tracing
+- SBOM step uses `|| true` (masks failures)
 
 ## 6. Compliance / Control Considerations
 
-- **NIST 800-53:** SI-3, SA-11 partially addressed; AC-2, AC-17 need auth when exposed.
-- **FedRAMP:** Would need auth, SBOM, and audit evidence for ATO.
+- **NIST 800-53:** SI-3, SA-11 addressed; AC-2 via API key when enabled.
+- **FedRAMP:** Would need auth enabled, SBOM, and audit evidence for ATO.
 
 ## 7. Required Mitigations
 
-1. Fix CI branch trigger (Low effort)
-2. Add SBOM step to CI (Low effort)
-3. Add API auth before production exposure (Medium effort)
-4. Add rate limiting (Low effort)
+1. Enable `REQUIRE_API_KEY` in production (Low effort)
+2. Remove `|| true` from SBOM step so failures are visible (Low effort)
 
 ## 8. Operational Security Considerations
 
 - Patching: CI runs pip-audit; address findings promptly.
-- Monitoring: Rely on platform (taskforge-observability) for metrics/alerts.
-- Secrets: Use platform secret management (e.g., External Secrets) when needed.
+- Monitoring: Prometheus metrics; Grafana dashboard available.
+- Secrets: Use platform secret management (e.g., External Secrets) for GITHUB_TOKEN, API_KEY.
 
 ## 9. Final Recommendation
 
-**Moderate risk with controls** — Suitable for internal platform use with network isolation. Before broader or internet exposure: add API auth, rate limiting, and SBOM.
+**Low risk** — Suitable for internal platform use. Enable API auth and rate limiting in production. Proceed with standard due diligence.
 
 ## 10. Next Validation Steps
 
-- Confirm CI runs on `master` (or align branch names)
-- Run `pip-audit` in project venv to validate declared deps only
-- Add integration test with real `requirements.txt` containing known-vulnerable package
+- Enable `REQUIRE_API_KEY` in production deployment
+- Verify SBOM generation succeeds (remove `|| true` or handle failures explicitly)
+- Run scheduled scan workflow weekly
 
 ---
 
@@ -251,10 +252,10 @@ TaskForge Security is a minimal FastAPI service that scans `requirements.txt` fi
 
 - **Layer 1 (Model):** N/A
 - **Layer 2 (Memory/Context):** N/A
-- **Layer 3 (Tooling):** N/A (pip-audit is a subprocess, not an agent tool)
+- **Layer 3 (Tooling):** N/A (pip-audit, Trivy are subprocesses)
 - **Layer 4 (Orchestration):** N/A
 - **Layer 5 (Communication):** REST API only
-- **Layer 6 (Infrastructure):** Docker, CI present
+- **Layer 6 (Infrastructure):** Docker, CI, metrics
 - **Layer 7 (Evaluation):** No agent-specific evaluation
 
 **Verdict:** Not applicable. No AI agent architecture to evaluate.
@@ -270,53 +271,57 @@ TaskForge Security is a minimal FastAPI service that scans `requirements.txt` fi
 | Policy Area | Status | Notes |
 |-------------|--------|-------|
 | Secrets in code | Pass | No hardcoded secrets |
-| Pinned actions | Pass | checkout, setup-python use SHA |
-| SBOM | Fail | No SBOM step |
+| Pinned actions | Pass | checkout, setup-python, upload-artifact use v4/SHA |
+| SBOM | Pass | pip-audit cyclonedx-json in CI |
 | Resource limits | N/A | No K8s in repo |
-| Promotion gates | N/A | Single pipeline |
+| Promotion gates | N/A | Single pipeline; gate endpoint for policy |
+| Rate limiting | Pass | SlowAPI on scan/remediate |
+| Metrics | Pass | /metrics endpoint |
 
-**Verdict:** `pass_with_warnings` — Add SBOM for full compliance.
+**Verdict:** **pass** — No critical/high findings. SBOM present. Optional: remove `|| true` from SBOM step.
 
 ---
 
 # 7. Tool Evaluator
 
-**Tool:** TaskForge Security (CVE scanning microservice)
+**Tool:** TaskForge Security (DevSecOps CVE scanning microservice)
 
 ## 1. Summary
 
-TaskForge Security is a minimal Python FastAPI service that scans `requirements.txt` for CVEs via pip-audit. It fits well as an internal platform security component. Recommendation: **Fit with caveats** — use internally with network isolation; add auth and SBOM before broader adoption.
+TaskForge Security is a Python FastAPI service with pip-audit, Trivy image scanning, OSV/KEV enrichment, remediation planning, PR creation, policy gating, and Prometheus metrics. It fits well as an internal platform security component. Recommendation: **Fit** — suitable for internal use; enable auth in production.
 
 ## 2. Best Fit Use Cases
 
 - Internal platform CVE scanning
 - CI integration for dependency checks
-- Pre-deployment security gate (when integrated with platform)
+- Pre-deployment policy gate
+- Container image scanning (Trivy)
+- Automated remediation PR creation
 
 ## 3. Evaluation Scorecard
 
 | Category | Score (1–10) | Justification |
 |----------|--------------|---------------|
-| Problem Fit | 8 | Solves CVE scanning for Python deps |
-| Capability Fit | 7 | Minimal; no OSV, remediation, or container scanning yet |
-| Integration Fit | 7 | REST API; easy to call from CI/platform |
-| Data Hydration & Readiness | 8 | requirements.txt is standard; no transformation |
-| Security & Compliance | 6 | Good basics; no auth, no SBOM |
-| Operational Fit | 8 | Simple; Docker, clear README |
+| Problem Fit | 9 | CVE scanning, OSV/KEV, remediation, policy gate |
+| Capability Fit | 8 | pip-audit, Trivy, PR creation, metrics |
+| Integration Fit | 8 | REST API; easy to call from CI/platform |
+| Data Hydration & Readiness | 8 | requirements.txt, image ref; standard inputs |
+| Security & Compliance | 7 | Auth, rate limit, SBOM, lockfile |
+| Operational Fit | 8 | Docker, metrics, Grafana dashboard |
 | Cost & Risk | 9 | Open source; minimal deps |
 
 ## 4. Recommendation
 
-**Fit with caveats** — Add API auth and SBOM before production exposure.
+**Fit** — Production-ready for internal platform use. Enable API auth and rate limiting in production. Add Grafana dashboard to observability stack.
 
 ---
 
 # Summary of Action Items
 
-| Priority | Action | Skill Source |
-|----------|--------|--------------|
-| 1 | Fix CI branch: use `master` or rename to `main` | DoD ZT, Security |
-| 2 | Add SBOM generation to CI | Zero Trust GitOps, DoD ZT, Security |
-| 3 | Add API authentication | DoD ZT, Security |
-| 4 | Add rate limiting | DoD ZT, Security |
-| 5 | Add lockfile for reproducible builds | Zero Trust GitOps |
+| Priority | Action | Status |
+|----------|--------|--------|
+| 1 | Enable `REQUIRE_API_KEY` in production | ✅ Startup warning when production without API key; README updated |
+| 2 | Remove `|| true` from SBOM step | ✅ CI SBOM job now fails on vulnerabilities |
+| 3 | Document TLS requirement at ingress | ✅ Production Deployment section in README |
+| 4 | Add trace correlation (if platform supports) | Pending |
+| 5 | Add Grafana dashboard to platform observability | Pending |

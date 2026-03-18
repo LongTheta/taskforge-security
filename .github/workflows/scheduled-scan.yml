@@ -1,0 +1,47 @@
+# Scheduled vulnerability scan - runs pip-audit and optionally Trivy.
+# Use as a template for repos that consume taskforge-security.
+name: Scheduled Scan
+
+on:
+  schedule:
+    # Daily at 00:00 UTC
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  scan-manifest:
+    name: Scan Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - name: Install
+        run: uv sync --all-extras
+      - name: Run pip-audit
+        run: uv run pip-audit --skip-editable
+        continue-on-error: true
+      - name: pip-audit JSON (artifact)
+        run: uv run pip-audit -f cyclonedx-json -o scan-result.json || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: scan-result
+          path: scan-result.json
+
+  scan-image:
+    name: Scan Container Image
+    runs-on: ubuntu-latest
+    if: false  # Enable when trivy is needed; set image ref below
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "python:3.11-slim"
+          format: "sarif"
+          output: "trivy-results.sarif"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trivy-results
+          path: trivy-results.sarif

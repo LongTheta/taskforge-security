@@ -20,8 +20,12 @@ def mock_scan_result() -> ScanResponse:
                 vulnerability_id="CVE-2023-32681",
                 summary="Request smuggling",
                 fixed_versions=["2.31.0"],
+                source="pip-audit",
             )
         ],
+        risk_summary=None,
+        osv_enrichment_available=False,
+        kev_prioritization_available=False,
     )
 
 
@@ -79,3 +83,29 @@ def test_scan_returns_401_when_auth_required_and_missing(client: TestClient) -> 
         )
     assert resp.status_code == 401
     assert "api key" in resp.json()["detail"].lower() or "invalid" in resp.json()["detail"].lower()
+
+
+def test_scan_image_returns_vulnerabilities_when_success(
+    client: TestClient, mock_scan_result: ScanResponse
+) -> None:
+    """Scan image endpoint returns vulnerabilities when Trivy succeeds."""
+    with patch("app.api.routes.scan.run_image_scan", return_value=mock_scan_result):
+        resp = client.post(
+            "/api/v1/scan/image",
+            json={"image_ref": "python:3.11-slim"},
+        )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["vulnerability_count"] == 1
+    assert data["vulnerabilities"][0]["package"] == "requests" and data["vulnerabilities"][0]["source"] == "pip-audit"
+
+
+def test_scan_image_returns_500_when_trivy_not_found(client: TestClient) -> None:
+    """Scan image returns 500 when trivy CLI is not found."""
+    with patch("app.api.routes.scan.run_image_scan") as mock:
+        mock.side_effect = RuntimeError("trivy CLI not found")
+        resp = client.post(
+            "/api/v1/scan/image",
+            json={"image_ref": "python:3.11-slim"},
+        )
+    assert resp.status_code == 500
