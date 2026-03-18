@@ -1,0 +1,18 @@
+# TaskForge Security - Local development
+# Usage: docker-compose up
+
+services:
+  taskforge-security:
+    build: .
+    ports:
+      - "8081:8081"
+    environment:
+      - APP_ENV=development
+      - LOG_LEVEL=INFO
+      - OSV_API_BASE=https://api.osv.dev
+      - SCAN_TIMEOUT=120
+    volumes:
+      # Mount a sample project for scanning (optional)
+      - .:/app
+    # For scanning host paths, use host network or bind-mount target dirs
+    # Example: - /path/to/your/project:/scan-target:ro
