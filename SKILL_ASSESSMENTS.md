@@ -1,8 +1,8 @@
 # Skill Assessments — taskforge-security
 
-*Generated from running all applicable Cursor skills (22 total) against this repository.*
+*Generated from running all applicable agent skills (22 total) against this repository.*
 
-**Project rules:** `.cursor/rules/` — security-devsecops.mdc (always apply), pipeline-conventions.mdc, python-fastapi.mdc
+**Project rules:** Previously under project AI rules — security-devsecops.mdc (always apply), pipeline-conventions.mdc, python-fastapi.mdc
 
 ## All 22 Skills — Applicability & Verdict
 
@@ -22,10 +22,10 @@
 | 12 | repo-docs-writer | Yes | See §12 |
 | 13 | test-strategy-designer | Yes | See §13 |
 | 14 | create-repo-foundation | Yes | See §14 |
-| 15 | create-rule | Meta | Used for .cursor/rules |
+| 15 | create-rule | Meta | Used for project AI rules |
 | 16 | create-skill | Meta | N/A |
 | 17 | create-subagent | Meta | N/A |
-| 18 | update-cursor-settings | Meta | N/A |
+| 18 | update-vscode-settings | Meta | N/A |
 | 19 | shell | Meta | N/A |
 | 20 | migrate-to-skills | Meta | N/A |
 
@@ -394,7 +394,7 @@ TaskForge Security is a Python FastAPI service with pip-audit, Trivy image scann
 
 # 11. AI Code Review Guardrails
 
-**Assessment:** Implicit guardrails from .cursor/rules.
+**Assessment:** Implicit guardrails from project AI rules.
 
 | Area | Status | Notes |
 |------|--------|-------|
